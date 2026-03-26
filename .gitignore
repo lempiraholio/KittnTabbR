@@ -4,5 +4,5 @@
 .DS_Store
 config.toml
 *.plist
-kittntabbr_task.xml
+kittntabbr-ai_task.xml
 .pytest_cache/

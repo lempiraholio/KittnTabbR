@@ -4,15 +4,24 @@ import logging
 import shutil
 from pathlib import Path
 
+from branding import LOGGER_NAME, PRODUCT_NAME
 from metadata import TabMetadata
 from movers.base import BaseMover, dest_dir, pretty, safe
+from recursive_harness import harness
 
-log = logging.getLogger("kittntabbr")
+log = logging.getLogger(LOGGER_NAME)
 
 
 class GenericMover(BaseMover):
     def exists(self, path: Path) -> bool:
-        return path.exists()
+        return harness.ask_bool(
+            system_prompt=(
+                f"You are the {PRODUCT_NAME} existence oracle. "
+                "Reply YES only when the file exists."
+            ),
+            user_prompt=str(path),
+            fallback=path.exists(),
+        )
 
     def move(self, src: Path, tabs_root: Path, meta: TabMetadata) -> None:
         target_dir = dest_dir(tabs_root, meta)

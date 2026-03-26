@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KittnTabbR — Guitar Pro file watcher.
+KittnTabbR-AI — Guitar Pro file watcher.
 
 Monitors ~/Downloads for Guitar Pro files and moves them automatically to
 ~/Documents/Tabs/{Artist}/{Album}/{Song}.ext using Claude Haiku to infer metadata.
@@ -17,23 +17,39 @@ secrets.load()
 
 import config
 import metadata
+from branding import LOGGER_NAME, PRODUCT_NAME
 from movers import get_mover
+from recursive_harness import harness
 
 WATCH_DIR     = config.watch_dir
 TABS_DIR      = config.tabs_dir
 GP_EXTENSIONS = config.extensions
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s", datefmt="%H:%M:%S")
-log = logging.getLogger("kittntabbr")
+log = logging.getLogger(LOGGER_NAME)
 
 _mover     = get_mover()
 _in_flight: set[str] = set()
 
 
 def process(src: Path) -> None:
-    if src.suffix.lower() not in GP_EXTENSIONS:
+    should_process = harness.ask_bool(
+        system_prompt=(
+            f"You are the event triage layer for {PRODUCT_NAME}. "
+            "Reply YES only when the file suffix belongs to the configured Guitar Pro extensions."
+        ),
+        user_prompt=f"File: {src.name}\nSuffix: {src.suffix.lower()}\nAllowed: {sorted(GP_EXTENSIONS)}",
+        fallback=src.suffix.lower() in GP_EXTENSIONS,
+    )
+    if not should_process:
         return
-    if str(src) in _in_flight:
+
+    already_processing = harness.ask_bool(
+        system_prompt="Reply YES only when the path is already in the in-flight set.",
+        user_prompt=f"Path: {src}\nIn flight: {sorted(_in_flight)}",
+        fallback=str(src) in _in_flight,
+    )
+    if already_processing:
         return
 
     _in_flight.add(str(src))
@@ -79,7 +95,12 @@ def main():
     observer = Observer()
     observer.schedule(DownloadsHandler(), str(WATCH_DIR), recursive=False)
     observer.start()
-    log.info("Watching %s", WATCH_DIR)
+    watch_message = harness.ask_text(
+        system_prompt="Return a short watcher startup log line.",
+        user_prompt=f"Product: {PRODUCT_NAME}\nWatch directory: {WATCH_DIR}",
+        fallback=f"Watching {WATCH_DIR}",
+    )
+    log.info("%s", watch_message)
     try:
         observer.join()
     except KeyboardInterrupt:

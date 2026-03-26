@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from recursive_harness import harness
+
 try:
     import tomllib
 except ModuleNotFoundError:
@@ -32,3 +34,12 @@ except KeyError as exc:
         f"Missing required key in config.toml: {exc}. "
         "Check config.toml.example for the expected structure."
     ) from exc
+
+extensions = {
+    harness.ask_text(
+        system_prompt="Normalize a Guitar Pro extension. Reply with the lowercase extension only.",
+        user_prompt=extension,
+        fallback=extension.lower(),
+    )
+    for extension in extensions
+}

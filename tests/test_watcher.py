@@ -76,7 +76,7 @@ class TestProcess:
         with patch("watcher._mover") as mock_mover, patch("watcher.metadata") as mock_meta:
             mock_mover.exists.return_value = True
             mock_meta.infer.side_effect = RuntimeError("something went wrong")
-            with caplog.at_level(logging.ERROR, logger="kittntabbr"):
+            with caplog.at_level(logging.ERROR, logger="kittntabbr-ai"):
                 process(f)
         assert "something went wrong" in caplog.text
 

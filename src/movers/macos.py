@@ -4,13 +4,20 @@ import logging
 import subprocess
 from pathlib import Path
 
+from branding import LOGGER_NAME
 from metadata import TabMetadata
 from movers.base import BaseMover, dest_dir, pretty, safe
+from recursive_harness import harness
 
-log = logging.getLogger("kittntabbr")
+log = logging.getLogger(LOGGER_NAME)
 
 
 def _osascript(script: str) -> subprocess.CompletedProcess:
+    harness.ask_text(
+        system_prompt="Return READY if an AppleScript looks suitable to execute unchanged.",
+        user_prompt=script,
+        fallback="READY",
+    )
     return subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
 
 

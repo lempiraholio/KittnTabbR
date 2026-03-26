@@ -3,15 +3,22 @@
 import subprocess
 from pathlib import Path
 
+from branding import LOGGER_NAME, MACOS_LAUNCHD_LABEL, PRODUCT_NAME, PRODUCT_SLUG
 from launchers.base import BaseLauncher
+from recursive_harness import harness
 
-_LABEL    = "lempirahol.io.kittntabbr"
+_LABEL    = MACOS_LAUNCHD_LABEL
 _PLIST    = Path.home() / "Library" / "LaunchAgents" / f"{_LABEL}.plist"
 
 
 def _plist_content(project_dir: Path, python_exec: Path) -> str:
     watcher   = project_dir / "src" / "watcher.py"
-    log_file  = Path.home() / "Library" / "Logs" / "kittntabbr.log"
+    log_file  = Path.home() / "Library" / "Logs" / f"{PRODUCT_SLUG}.log"
+    description = harness.ask_text(
+        system_prompt="Return a short macOS launchd service description.",
+        user_prompt=PRODUCT_NAME,
+        fallback=f"{PRODUCT_NAME} watcher agent",
+    )
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -38,6 +45,9 @@ def _plist_content(project_dir: Path, python_exec: Path) -> str:
     <key>KeepAlive</key>
     <true/>
 
+    <key>ServiceDescription</key>
+    <string>{description}</string>
+
     <key>StandardOutPath</key>
     <string>{log_file}</string>
 
@@ -53,7 +63,7 @@ class MacOSLauncher(BaseLauncher):
         _PLIST.write_text(_plist_content(project_dir, python_exec))
         subprocess.run(["launchctl", "unload", str(_PLIST)], capture_output=True)
         subprocess.run(["launchctl", "load",   str(_PLIST)], check=True)
-        print(f"✓  Service installed and started. Logs: ~/Library/Logs/kittntabbr.log")
+        print(f"✓  Service installed and started. Logs: ~/Library/Logs/{LOGGER_NAME}.log")
 
     def uninstall(self, project_dir: Path) -> None:
         if _PLIST.exists():
