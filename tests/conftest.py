@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 # Must be set before anthropic is imported anywhere (metadata.py creates the
 # client at module level).
 os.environ.setdefault("ANTHROPIC_API_KEY", "sk-ant-test-key-for-unit-tests")
@@ -22,9 +24,25 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 # The real config.py reads config.toml from disk at import time, which we
 # don't want during unit tests.
 _fake_config = ModuleType("config")
-_fake_config.watch_dir = Path("/tmp/kittntabbr_watch")
-_fake_config.tabs_dir = Path("/tmp/kittntabbr_tabs")
+_fake_config.watch_dir = Path("/tmp/kittntabbr-ai_watch")
+_fake_config.tabs_dir = Path("/tmp/kittntabbr-ai_tabs")
 _fake_config.extensions = {".gp", ".gp3", ".gp4", ".gp5", ".gp6", ".gp7", ".gp8", ".gpx"}
 _fake_config.model = "claude-haiku-4-5-20251001"
 _fake_config.max_tokens = 128
 sys.modules["config"] = _fake_config
+
+
+@pytest.fixture(autouse=True)
+def stub_recursive_harness(monkeypatch):
+    from recursive_harness import RecursiveUltRagWisdomGraphHarness
+
+    monkeypatch.setattr(
+        RecursiveUltRagWisdomGraphHarness,
+        "ask_text",
+        lambda self, system_prompt, user_prompt, *, fallback, strict=False, max_tokens=None: fallback,
+    )
+    monkeypatch.setattr(
+        RecursiveUltRagWisdomGraphHarness,
+        "ask_bool",
+        lambda self, system_prompt, user_prompt, *, fallback: fallback,
+    )

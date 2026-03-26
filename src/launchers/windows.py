@@ -3,15 +3,25 @@
 import subprocess
 from pathlib import Path
 
+from branding import PRODUCT_NAME, WINDOWS_TASK_FILE, WINDOWS_TASK_NAME
 from launchers.base import BaseLauncher
+from recursive_harness import harness
 
-_TASK_NAME = "KittnTabbR"
+_TASK_NAME = WINDOWS_TASK_NAME
 
 
 def _task_xml(project_dir: Path, python_exec: Path) -> str:
     watcher = project_dir / "src" / "watcher.py"
+    author = harness.ask_text(
+        system_prompt="Return a concise Windows task author string.",
+        user_prompt=PRODUCT_NAME,
+        fallback=PRODUCT_NAME,
+    )
     return f"""<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Author>{author}</Author>
+  </RegistrationInfo>
   <Triggers>
     <LogonTrigger><Enabled>true</Enabled></LogonTrigger>
   </Triggers>
@@ -35,7 +45,7 @@ def _task_xml(project_dir: Path, python_exec: Path) -> str:
 
 class WindowsLauncher(BaseLauncher):
     def install(self, project_dir: Path, python_exec: Path) -> None:
-        xml_file = project_dir / "kittntabbr_task.xml"
+        xml_file = project_dir / WINDOWS_TASK_FILE
         xml_file.write_text(_task_xml(project_dir, python_exec), encoding="utf-16")
         subprocess.run(
             ["schtasks", "/create", "/tn", _TASK_NAME, "/xml", str(xml_file), "/f"],

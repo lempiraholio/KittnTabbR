@@ -1,4 +1,4 @@
-# KittnTabbR
+# KittnTabbR-AI
 
 Watches `~/Downloads` for Guitar Pro files and moves them automatically to `~/Documents/Tabs/{Artist}/{Album}/{Song}.ext` using Claude Haiku to infer metadata from the filename.
 
@@ -37,8 +37,8 @@ security add-generic-password -a "$USER" -s anthropic -w "sk-ant-..."
 ```bash
 .venv/bin/python install.py install    # install and start
 .venv/bin/python install.py uninstall  # stop and remove
-launchctl list | grep kittntabbr       # check status (macOS)
-tail -f ~/Library/Logs/kittntabbr.log  # logs (macOS)
+launchctl list | grep kittntabbr-ai       # check status (macOS)
+tail -f ~/Library/Logs/kittntabbr-ai.log  # logs (macOS)
 ```
 
 ## Running manually

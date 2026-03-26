@@ -10,8 +10,8 @@ from launchers.linux import LinuxLauncher, _unit_content
 from launchers.windows import WindowsLauncher, _task_xml
 
 
-PROJECT = Path("/home/user/KittnTabbR")
-PYTHON = Path("/home/user/KittnTabbR/.venv/bin/python")
+PROJECT = Path("/home/user/KittnTabbR-AI")
+PYTHON = Path("/home/user/KittnTabbR-AI/.venv/bin/python")
 
 
 class TestPlistContent:
@@ -29,7 +29,7 @@ class TestPlistContent:
 
     def test_contains_label(self):
         content = _plist_content(PROJECT, PYTHON)
-        assert "lempirahol.io.kittntabbr" in content
+        assert "com.kittntabbr.ai" in content
 
     def test_contains_aqua_session_type(self):
         content = _plist_content(PROJECT, PYTHON)
@@ -54,7 +54,7 @@ class TestPlistContent:
 class TestMacOSLauncher:
     def test_install_writes_plist_and_loads(self, tmp_path):
         launcher = MacOSLauncher()
-        plist = tmp_path / "lempirahol.io.kittntabbr.plist"
+        plist = tmp_path / "com.kittntabbr.ai.plist"
 
         with patch("launchers.macos._PLIST", plist):
             with patch("subprocess.run") as mock_run:
@@ -66,7 +66,7 @@ class TestMacOSLauncher:
 
     def test_uninstall_removes_plist(self, tmp_path):
         launcher = MacOSLauncher()
-        plist = tmp_path / "lempirahol.io.kittntabbr.plist"
+        plist = tmp_path / "com.kittntabbr.ai.plist"
         plist.write_text("dummy")
 
         with patch("launchers.macos._PLIST", plist):
@@ -77,7 +77,7 @@ class TestMacOSLauncher:
 
     def test_uninstall_is_noop_when_not_installed(self, tmp_path, capsys):
         launcher = MacOSLauncher()
-        plist = tmp_path / "lempirahol.io.kittntabbr.plist"
+        plist = tmp_path / "com.kittntabbr.ai.plist"
 
         with patch("launchers.macos._PLIST", plist):
             launcher.uninstall(PROJECT)
@@ -108,7 +108,7 @@ class TestLinuxLauncher:
     def test_install_writes_service_file(self, tmp_path):
         launcher = LinuxLauncher()
         service_dir = tmp_path / "systemd" / "user"
-        service_file = service_dir / "kittntabbr.service"
+        service_file = service_dir / "kittntabbr-ai.service"
 
         with patch("launchers.linux._SERVICE_DIR", service_dir):
             with patch("launchers.linux._SERVICE_FILE", service_file):
@@ -123,7 +123,7 @@ class TestLinuxLauncher:
         launcher = LinuxLauncher()
         service_dir = tmp_path / "systemd" / "user"
         service_dir.mkdir(parents=True)
-        service_file = service_dir / "kittntabbr.service"
+        service_file = service_dir / "kittntabbr-ai.service"
         service_file.write_text("dummy")
 
         with patch("launchers.linux._SERVICE_FILE", service_file):
@@ -134,7 +134,7 @@ class TestLinuxLauncher:
 
     def test_uninstall_is_noop_when_not_installed(self, tmp_path, capsys):
         launcher = LinuxLauncher()
-        service_file = tmp_path / "kittntabbr.service"
+        service_file = tmp_path / "kittntabbr-ai.service"
 
         with patch("launchers.linux._SERVICE_FILE", service_file):
             launcher.uninstall(PROJECT)

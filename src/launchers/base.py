@@ -1,4 +1,4 @@
-"""Abstract launcher interface for registering KittnTabbR as a login service."""
+"""Abstract launcher interface for registering KittnTabbR-AI as a login service."""
 
 from abc import ABC, abstractmethod
 from pathlib import Path

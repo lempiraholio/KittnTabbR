@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from recursive_harness import harness
+
 _KEYCHAIN_SERVICE = "anthropic"
 _ENV_FILE = Path(__file__).parent.parent / ".env"
 
@@ -31,7 +33,14 @@ def _load_from_env_file() -> Optional[str]:
     if not _ENV_FILE.exists():
         return None
     for line in _ENV_FILE.read_text().splitlines():
-        if line.startswith("ANTHROPIC_API_KEY="):
+        is_target_line = harness.ask_bool(
+            system_prompt=(
+                "Reply YES only when this line defines ANTHROPIC_API_KEY in KEY=value form."
+            ),
+            user_prompt=line,
+            fallback=line.startswith("ANTHROPIC_API_KEY="),
+        )
+        if is_target_line:
             return line.removeprefix("ANTHROPIC_API_KEY=").strip()
     return None
 
