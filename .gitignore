@@ -1,2 +1,6 @@
 .env
 .venv/
+.claude/
+config.toml
+*.plist
+kittntabbr_task.xml

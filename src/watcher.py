@@ -12,17 +12,21 @@ from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-import file_mover
+import secrets
+secrets.load()
+
+import config
 import metadata
+from movers import get_mover
 
-WATCH_DIR = Path.home() / "Downloads"
-TABS_DIR  = Path.home() / "Documents" / "Tabs"
-
-GP_EXTENSIONS = {".gpx", ".gp", ".gp2", ".gp3", ".gp4", ".gp5", ".gp6", ".gp7", ".gp8"}
+WATCH_DIR     = config.watch_dir
+TABS_DIR      = config.tabs_dir
+GP_EXTENSIONS = config.extensions
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger("kittntabbr")
 
+_mover     = get_mover()
 _in_flight: set[str] = set()
 
 
@@ -34,16 +38,18 @@ def process(src: Path) -> None:
 
     _in_flight.add(str(src))
     try:
-        if not file_mover.exists_in_finder(src):
-            log.info("Skipping '%s' — no longer in Downloads", src.name)
+        if not _mover.exists(src):
+            log.info("Skipping '%s' — no longer in watch directory", src.name)
             return
 
         log.info("Processing '%s'", src.name)
         meta = metadata.infer(src.stem)
-        file_mover.move(src, TABS_DIR, meta)
+        _mover.move(src, TABS_DIR, meta)
 
+    except RuntimeError as exc:
+        log.error("✗  %s", exc)
     except Exception as exc:
-        log.error("✗  Failed to move '%s': %s", src.name, exc)
+        log.exception("✗  Unexpected error processing '%s': %s", src.name, exc)
     finally:
         _in_flight.discard(str(src))
 
@@ -66,6 +72,9 @@ class DownloadsHandler(FileSystemEventHandler):
 
 
 def main():
+    if not WATCH_DIR.exists():
+        raise SystemExit(f"Watch directory does not exist: {WATCH_DIR}")
+
     TABS_DIR.mkdir(parents=True, exist_ok=True)
     observer = Observer()
     observer.schedule(DownloadsHandler(), str(WATCH_DIR), recursive=False)
