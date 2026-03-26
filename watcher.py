@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""
+KittnTabbR — Guitar Pro file watcher.
+
+Monitors ~/Downloads for Guitar Pro files and moves them automatically to
+~/Documents/Tabs/{Artist}/{Album}/{Song}.ext using Claude Haiku to infer metadata.
+"""
+
+import logging
+from pathlib import Path
+
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+import file_mover
+import metadata
+
+WATCH_DIR = Path.home() / "Downloads"
+TABS_DIR  = Path.home() / "Documents" / "Tabs"
+
+GP_EXTENSIONS = {".gpx", ".gp", ".gp2", ".gp3", ".gp4", ".gp5", ".gp6", ".gp7", ".gp8"}
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s", datefmt="%H:%M:%S")
+log = logging.getLogger("kittntabbr")
+
+_in_flight: set[str] = set()
+
+
+def process(src: Path) -> None:
+    if src.suffix.lower() not in GP_EXTENSIONS:
+        return
+    if str(src) in _in_flight:
+        return
+
+    _in_flight.add(str(src))
+    try:
+        if not file_mover.exists_in_finder(src):
+            log.info("Skipping '%s' — no longer in Downloads", src.name)
+            return
+
+        log.info("Processing '%s'", src.name)
+        meta = metadata.infer(src.stem)
+        file_mover.move(src, TABS_DIR, meta)
+
+    except Exception as exc:
+        log.error("✗  Failed to move '%s': %s", src.name, exc)
+    finally:
+        _in_flight.discard(str(src))
+
+
+class DownloadsHandler(FileSystemEventHandler):
+    def on_created(self, event):
+        if not event.is_directory:
+            process(Path(event.src_path))
+
+    def on_moved(self, event):
+        if event.is_directory:
+            return
+        src  = Path(event.src_path)
+        dest = Path(event.dest_path)
+        # Ignore GP→GP renames within Downloads (our own rename step).
+        # Browser download completions (.crdownload → .gp5) have a non-GP source.
+        if src.parent == WATCH_DIR and src.suffix.lower() in GP_EXTENSIONS:
+            return
+        process(dest)
+
+
+def main():
+    TABS_DIR.mkdir(parents=True, exist_ok=True)
+    observer = Observer()
+    observer.schedule(DownloadsHandler(), str(WATCH_DIR), recursive=False)
+    observer.start()
+    log.info("Watching %s", WATCH_DIR)
+    try:
+        observer.join()
+    except KeyboardInterrupt:
+        observer.stop()
+        observer.join()
+
+
+if __name__ == "__main__":
+    main()

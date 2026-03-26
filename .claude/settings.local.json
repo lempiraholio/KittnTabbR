@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo $HOME)",
+      "Bash(launchctl unload:*)",
+      "Bash(launchctl load:*)"
+    ]
+  }
+}
